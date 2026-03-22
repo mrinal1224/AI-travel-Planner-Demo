@@ -1,0 +1,27 @@
+@import 'tailwindcss';
+
+/* App theme: calm travel palette, works in light mode for MVP */
+@theme {
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-50: #effefb;
+  --color-brand-100: #c6fff5;
+  --color-brand-200: #8effeb;
+  --color-brand-300: #4dffe0;
+  --color-brand-400: #1ff5d0;
+  --color-brand-500: #00d9b8;
+  --color-brand-600: #00ae94;
+  --color-brand-700: #008b78;
+  --color-brand-800: #006f61;
+  --color-brand-900: #065b50;
+}
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 font-sans;
+  }
+}
