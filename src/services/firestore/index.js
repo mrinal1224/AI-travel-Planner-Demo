@@ -6,3 +6,4 @@ export {
   profileFromSnapshot,
   saveUserProfile,
 } from './userProfile'
+export { createTrip, listTripsForUser, tripFromFirestore } from './trips'

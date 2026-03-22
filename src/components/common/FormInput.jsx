@@ -11,6 +11,10 @@ export function FormInput({
   readOnly,
   required,
   hint,
+  placeholder,
+  min,
+  max,
+  step,
 }) {
   const inputId = id ?? (name ? String(name) : undefined) ?? label?.toLowerCase().replace(/\s+/g, '-')
 
@@ -31,6 +35,10 @@ export function FormInput({
         onChange={onChange}
         disabled={disabled}
         readOnly={readOnly}
+        placeholder={placeholder}
+        min={min}
+        max={max}
+        step={step}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
         className={[

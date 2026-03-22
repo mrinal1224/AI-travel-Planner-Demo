@@ -29,8 +29,8 @@ Features are delivered in order; update this list as each one ships.
 | 2 | Authentication (signup, login, logout, protected routes, session) | Done |
 | 3 | App layout and routing refinements (if needed) | Planned |
 | 4 | User profile / travel preferences | Done |
-| 5 | Dashboard (trip list, empty state, create CTA) | Planned |
-| 6 | Create trip flow | Planned |
+| 5 | Dashboard (trip list, empty state, create CTA) | Done |
+| 6 | Create trip flow | Done |
 | 7 | Trip details page | Planned |
 | 8 | AI itinerary generation (mock-ready) | Planned |
 | 9 | Editable itinerary builder | Planned |
@@ -166,6 +166,39 @@ Use this section as a running changelog for shipped features. **When adding a ne
 
 **Firestore document shape:** `name`, `email`, `photoURL`, `preferences` (`budgetStyle`, `tripType`, `interests`, `pace`, `transportPreference`), `createdAt`, `updatedAt`.
 
+### Feature 4 — Dashboard
+
+**Purpose:** Show all trips owned by the signed-in user from Firestore, with polished cards, loading and empty states, and navigation to trip details.
+
+**Delivered**
+
+- **`src/services/firestore/trips.js`** — `listTripsForUser(uid)` using `where('userId', '==', uid)` (no composite index); `tripFromFirestore`; sort by `updatedAt` in memory.
+- **`src/services/firestore/index.js`** — Exports `listTripsForUser`, `tripFromFirestore`.
+- **`src/hooks/useUserTrips.js`** — Fetches when `user.uid` is available; exposes `trips`, `loading`, `error`, `refetch`.
+- **`src/utils/dateDisplay.js`** — `coerceDate`, `formatTripDateRange` (Firestore `Timestamp`, `Date`, or ISO string).
+- **`src/utils/moneyDisplay.js`** — `formatTripBudget` (USD-style for numbers).
+- **`src/components/dashboard/TripCard.jsx`** — Reusable link card (title, destination, date range, budget) → `/trips/:tripId`.
+- **`TripCardSkeleton.jsx`**, **`EmptyTripsState.jsx`** — Loading grid placeholder and empty state with CTA.
+- **`src/pages/DashboardPage.jsx`** — Header **Create new trip** button, error alert + retry, responsive grid.
+
+**Note:** The list stays empty until trips exist with field **`userId`** equal to the current user’s UID (Create Trip flow).
+
+### Feature 5 — Create trip
+
+**Purpose:** Create `trips` documents in Firestore with validation, timestamps, `shareId`, and redirect to trip details.
+
+**Delivered**
+
+- **`src/utils/shareId.js`** — `generateShareId()` (`crypto.randomUUID` with fallback).
+- **`src/utils/createTripValidation.js`** — `validateCreateTripForm` (required: title, destination, dates, travelers ≥ 1, budget ≥ 0, pace).
+- **`src/services/firestore/trips.js`** — `createTrip(userId, input)` via `addDoc`, `serverTimestamp()` for `createdAt` / `updatedAt`, and `shareId`; `tripFromFirestore` includes travelers, interests, pace, notes, shareId.
+- **`src/services/firestore/index.js`** — Exports `createTrip`.
+- **`src/components/common/FormInput.jsx`** — Optional `placeholder`, `min`, `max`, `step`.
+- **`src/components/auth/AuthSubmitButton.jsx`** — Optional `className` (default `w-full`).
+- **`src/pages/CreateTripPage.jsx`** — Full form, `FirebaseUnavailable` when DB missing, error alert, `navigate` to `/trips/:id` on success.
+
+**Firestore fields written:** `userId`, `title`, `destination`, `startDate`, `endDate` (YYYY-MM-DD strings), `travelers`, `budget`, `interests`, `pace`, `notes`, `shareId`, `createdAt`, `updatedAt`.
+
 ---
 
-*Last updated: Feature 3 complete.*
+*Last updated: Feature 5 complete.*
