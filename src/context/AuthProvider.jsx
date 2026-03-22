@@ -8,6 +8,7 @@ import {
   signInWithGoogle as firebaseSignInWithGoogle,
   subscribeToAuthState,
 } from '../services/firebase/auth'
+import { ensureUserProfile } from '../services/firestore/userProfile'
 import { AuthContext } from './authContext'
 
 export function AuthProvider({ children }) {
@@ -25,6 +26,21 @@ export function AuthProvider({ children }) {
     })
     return unsubscribe
   }, [authConfigured])
+
+  useEffect(() => {
+    if (!authConfigured || !user) {
+      return undefined
+    }
+    let cancelled = false
+    ensureUserProfile(user).then(({ error }) => {
+      if (!cancelled && error && import.meta.env.DEV) {
+        console.warn('[ensureUserProfile]', error)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [authConfigured, user])
 
   const loading = authConfigured && !initialized
 

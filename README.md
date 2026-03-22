@@ -28,7 +28,7 @@ Features are delivered in order; update this list as each one ships.
 | 1 | Project setup, folder structure, routing, layout, Firebase service shell | Done |
 | 2 | Authentication (signup, login, logout, protected routes, session) | Done |
 | 3 | App layout and routing refinements (if needed) | Planned |
-| 4 | User profile / travel preferences | Planned |
+| 4 | User profile / travel preferences | Done |
 | 5 | Dashboard (trip list, empty state, create CTA) | Planned |
 | 6 | Create trip flow | Planned |
 | 7 | Trip details page | Planned |
@@ -83,7 +83,9 @@ src/
   context/
   services/
     firebase/
+    firestore/
     ai/
+  constants/
   utils/
 ```
 
@@ -122,7 +124,7 @@ Use this section as a running changelog for shipped features. **When adding a ne
 **Delivered**
 
 - **`src/context/authContext.js`** — `AuthContext` instance.
-- **`src/context/AuthProvider.jsx`** — Subscribes to Firebase `onAuthStateChanged` when the app is configured; exposes `user`, `loading`, `authConfigured`, `signIn`, `signUp`, `logout`. Loading is false immediately when Firebase env is missing; otherwise true until the first auth callback.
+- **`src/context/AuthProvider.jsx`** — Subscribes to Firebase `onAuthStateChanged` when the app is configured; exposes `user`, `loading`, `authConfigured`, `signIn`, `signUp`, `signInWithGoogle`, `logout`. Also ensures a Firestore user doc exists after sign-in (Feature 3).
 - **`src/hooks/useAuth.js`** — `useAuth()` for consumers (keeps React Fast Refresh happy).
 - **`src/services/firebase/auth.js`** — `registerWithEmail`, `loginWithEmail`, `logOut`, `subscribeToAuthState`, `isAuthAvailable`, `mapAuthError` (friendly copy for Firebase error codes and missing config).
 - **`src/utils/validation.js`** — `validateEmail`, `validatePassword`, `validatePasswordConfirm` for client-side checks.
@@ -143,8 +145,27 @@ Use this section as a running changelog for shipped features. **When adding a ne
 
 **Google sign-in:** `signInWithGoogle` in `src/services/firebase/auth.js` uses `GoogleAuthProvider` + `signInWithPopup` (with `prompt=select_account`). Enable **Google** in Firebase Authentication and configure the OAuth consent screen / authorized domains as needed.
 
-**Not in scope for Feature 2:** Firestore user profiles, dashboard data, password reset, additional OAuth providers.
+**Not in scope for Feature 2:** Dashboard/trip data, password reset, additional OAuth providers.
+
+### Feature 3 — User profile & travel preferences
+
+**Purpose:** Persist each user under `users/{uid}` with editable identity and default travel preferences; bootstrap the document on first sign-in.
+
+**Delivered**
+
+- **`src/services/firestore/userProfile.js`** — `ensureUserProfile`, `fetchUserProfile`, `saveUserProfile`, `loadProfileDataForForm`, `profileFromSnapshot`, `defaultPreferences`; uses `mapFirestoreError` for friendly errors.
+- **`src/services/firestore/index.js`** — Barrel exports for Firestore user APIs.
+- **`src/utils/firestoreErrors.js`** — Maps `permission-denied` and other codes to UI copy.
+- **`src/services/firebase/config.js`** — `isFirestoreAvailable()` helper.
+- **`src/constants/travelPreferences.js`** — Select options for budget style, trip type, pace, transport.
+- **`src/components/common/FormInput.jsx`**, **`FormSelect.jsx`**, **`FormTextarea.jsx`**, **`InlineAlert.jsx`** — Reusable form + status UI.
+- **`src/components/profile/ProfileAvatar.jsx`**, **`ProfilePageSkeleton.jsx`** — Profile header and loading skeleton.
+- **`src/pages/ProfilePage.jsx`** — Full form: name, read-only email, preferences, save with loading / success / error; retry on load failure; `FirebaseUnavailable` when DB is not configured.
+- **`src/context/AuthProvider.jsx`** — After sign-in, calls `ensureUserProfile(user)` so the document exists even before the user opens Profile.
+- **`firestore.rules`** — Example rules: users may read/write only their own `users/{userId}` document. Deploy with Firebase CLI: `firebase deploy --only firestore:rules`.
+
+**Firestore document shape:** `name`, `email`, `photoURL`, `preferences` (`budgetStyle`, `tripType`, `interests`, `pace`, `transportPreference`), `createdAt`, `updatedAt`.
 
 ---
 
-*Last updated: Feature 2 complete.*
+*Last updated: Feature 3 complete.*

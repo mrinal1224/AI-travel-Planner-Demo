@@ -29,4 +29,8 @@ if (canInit) {
   console.info('[firebase] Not initialized — add VITE_FIREBASE_* variables to .env')
 }
 
+export function isFirestoreAvailable() {
+  return db != null
+}
+
 export { app, auth, db }

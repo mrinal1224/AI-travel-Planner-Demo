@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Users (Feature 3+)
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // --- Trips and nested data (Features 5–13)
+    match /trips/{tripId} {
+
+      function trip() {
+        return get(/databases/$(database)/documents/trips/$(tripId)).data;
+      }
+
+      function isTripOwner() {
+        return request.auth != null && resource.data.userId == request.auth.uid;
+      }
+
+      function isTripOwnerOnCreate() {
+        return request.auth != null && request.resource.data.userId == request.auth.uid;
+      }
+
+      // Published share link: treat non-empty shareId as "public overview" (use long random IDs, e.g. UUID)
+      function hasShareLink() {
+        return resource.data.shareId is string && resource.data.shareId.size() >= 8;
+      }
+
+      // Owner: full access. Others: read-only when trip has a shareId (shared page + itinerary reads).
+      allow get: if isTripOwner() || hasShareLink();
+      allow list: if (request.auth != null && resource.data.userId == request.auth.uid) || hasShareLink();
+
+      allow create: if isTripOwnerOnCreate();
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+
+      // Day documents + nested activities
+      match /days/{dayId} {
+        allow read: if (request.auth != null && trip().userId == request.auth.uid)
+          || (trip().shareId is string && trip().shareId.size() >= 8);
+        allow write: if request.auth != null && trip().userId == request.auth.uid;
+
+        match /activities/{activityId} {
+          allow read: if (request.auth != null && trip().userId == request.auth.uid)
+            || (trip().shareId is string && trip().shareId.size() >= 8);
+          allow write: if request.auth != null && trip().userId == request.auth.uid;
+        }
+      }
+
+      // Trip chat — signed-in owner only (not exposed on public share)
+      match /chat/{messageId} {
+        allow read, create, update, delete: if request.auth != null && trip().userId == request.auth.uid;
+      }
+    }
+  }
+}
