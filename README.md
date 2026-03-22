@@ -26,7 +26,7 @@ Features are delivered in order; update this list as each one ships.
 | # | Feature | Status |
 |---|---------|--------|
 | 1 | Project setup, folder structure, routing, layout, Firebase service shell | Done |
-| 2 | Authentication (signup, login, logout, protected routes, session) | Planned |
+| 2 | Authentication (signup, login, logout, protected routes, session) | Done |
 | 3 | App layout and routing refinements (if needed) | Planned |
 | 4 | User profile / travel preferences | Planned |
 | 5 | Dashboard (trip list, empty state, create CTA) | Planned |
@@ -70,7 +70,7 @@ npm run dev
 | `npm run preview` | Preview production build locally |
 | `npm run lint` | Run ESLint |
 
-Firebase env vars are documented in `.env.example`. Until they are set, the app still runs; Firebase stays uninitialized in development and a console message explains missing configuration.
+Firebase env vars are documented in `.env.example`. Until they are set, the app still runs; Firebase stays uninitialized in development and a console message explains missing configuration. For sign-up and log-in, enable **Email/Password** in Firebase Console → Authentication → Sign-in method.
 
 ## Repository layout
 
@@ -115,6 +115,36 @@ Use this section as a running changelog for shipped features. **When adding a ne
 
 **Not in scope for Feature 1:** Authentication flows, Firestore reads/writes, forms beyond copy placeholders, AI calls, protected routes.
 
+### Feature 2 — Authentication
+
+**Purpose:** Email/password auth with session persistence, guarded app routes, and guest-only auth screens.
+
+**Delivered**
+
+- **`src/context/authContext.js`** — `AuthContext` instance.
+- **`src/context/AuthProvider.jsx`** — Subscribes to Firebase `onAuthStateChanged` when the app is configured; exposes `user`, `loading`, `authConfigured`, `signIn`, `signUp`, `logout`. Loading is false immediately when Firebase env is missing; otherwise true until the first auth callback.
+- **`src/hooks/useAuth.js`** — `useAuth()` for consumers (keeps React Fast Refresh happy).
+- **`src/services/firebase/auth.js`** — `registerWithEmail`, `loginWithEmail`, `logOut`, `subscribeToAuthState`, `isAuthAvailable`, `mapAuthError` (friendly copy for Firebase error codes and missing config).
+- **`src/utils/validation.js`** — `validateEmail`, `validatePassword`, `validatePasswordConfirm` for client-side checks.
+- **`src/components/auth/`** — `AuthFormField`, `AuthSubmitButton`, `AuthFormCard`, `GoogleSignInButton`, `AuthDivider`.
+- **`src/utils/userDisplay.js`** — Navbar display name from `displayName` or formatted email local part.
+- **`src/components/common/AuthLoadingScreen.jsx`** — Full-page spinner + message while auth is resolving.
+- **`src/components/common/FirebaseUnavailable.jsx`** — Instructions when Firebase web keys are not set.
+- **`src/components/layout/RequireAuth.jsx`** — Wraps private app routes; shows loading, config error, or redirects to login with `state.from` for post-login return.
+- **`src/components/layout/GuestOnlyRoute.jsx`** — Wraps login/signup; redirects signed-in users to the prior `from` path or dashboard.
+- **`src/routes/AppRoutes.jsx`** — Main app nested under `RequireAuth` → `MainLayout`; `/login` and `/signup` under `GuestOnlyRoute`. `/share/:shareId` stays public.
+- **`src/pages/LoginPage.jsx` / `SignupPage.jsx`** — Wired forms, field + form errors, submit loading, **Continue with Google** (`signInWithPopup`), plus email/password.
+- **`src/components/layout/Navbar.jsx`** — Shows a **display name** when available (`getNavbarDisplayName`: Firebase `displayName` for Google users, otherwise a title-cased name from the email local part), email as `title` tooltip, and **Log out**.
+- **`src/main.jsx`** — `AuthProvider` inside `BrowserRouter`.
+- **`src/services/firebase/index.js`** — Re-exports auth helpers.
+- **`.env.example`** — Note to enable Email/Password in Firebase.
+
+**Session persistence:** Firebase Auth persists the session in the browser by default (`LOCAL` persistence).
+
+**Google sign-in:** `signInWithGoogle` in `src/services/firebase/auth.js` uses `GoogleAuthProvider` + `signInWithPopup` (with `prompt=select_account`). Enable **Google** in Firebase Authentication and configure the OAuth consent screen / authorized domains as needed.
+
+**Not in scope for Feature 2:** Firestore user profiles, dashboard data, password reset, additional OAuth providers.
+
 ---
 
-*Last updated: Feature 1 complete.*
+*Last updated: Feature 2 complete.*
